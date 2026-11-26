@@ -89,7 +89,7 @@ async function post(s: Server, path: string, body?: unknown): Promise<unknown> {
 /** One request to the running hive. */
 async function api(op: string, args: unknown = {}): Promise<unknown> {
   const s = await running();
-  if (!s) throw new Error('Beekeep is not running. Start it with: hive');
+  if (!s) throw new Error('Beekeep is not running. Start it with: beekeep');
   return post(s, '/api', { op, args });
 }
 
@@ -106,7 +106,8 @@ function openWindow(url: string): void {
   else spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref();
 }
 
-const HELP = `beekeep                          open the window (starts Beekeep if needed)
+const HELP = `beekeep                          open the screen in this terminal (starts Beekeep if needed)
+beekeep window                   open the full window in your browser, or the Mac app
 beekeep start | stop | status    run it without a window, stop it, or check on it
 beekeep link                     a one-time link for a browser of your choice
 beekeep logs                     the server log
@@ -151,7 +152,7 @@ function show(out: unknown): void {
 }
 
 function need(value: string | undefined, what: string): string {
-  if (!value) throw new Error(`Missing: ${what}. See: hive help`);
+  if (!value) throw new Error(`Missing: ${what}. See: beekeep help`);
   return value;
 }
 
@@ -164,7 +165,14 @@ async function readAll(): Promise<string> {
 async function main([command, ...rest]: string[]): Promise<void> {
   const words = rest.join(' ');
   switch (command) {
-    case undefined:
+    case undefined: {
+      const s = (await running()) ?? (await launch());
+      if (!process.stdout.isTTY || !process.stdin.isTTY) return console.log(`Beekeep is running on port ${s.port}. Run beekeep in a terminal to see it.`);
+      const { Link } = await import('../tui/link.ts');
+      const { runScreen } = await import('../tui/screen.ts');
+      return runScreen(new Link(s.port, s.token), async () => openWindow(await link(s)));
+    }
+    case 'window':
     case 'open':
       return openWindow(await link((await running()) ?? (await launch())));
     case 'start':
