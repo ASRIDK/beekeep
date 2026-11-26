@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Starts Beekeep if it is not running, then opens its window.
-#   hive          open the window
-#   beekeep status   is it running?
+# Starts Beekeep if it is not running, then opens its screen in this terminal.
+#   beekeep          the terminal screen
+#   beekeep window   the full window in your browser
 #   beekeep stop     stop it (bees keep their memory)
-#   beekeep logs     show the server log
+#   beekeep help     everything else
 set -euo pipefail
 
 self="${BASH_SOURCE[0]}"
@@ -13,16 +13,26 @@ while [ -L "$self" ]; do
 done
 root="$(cd "$(dirname "$self")/.." && pwd)"
 
-# Beekeep needs Node 24: newest one from nvm, else whatever is on the path.
+# Installed from npm, Beekeep runs compiled JavaScript; from a clone, its TypeScript.
+if [ -f "$root/lib/server/cli.js" ]; then
+  entry="$root/lib/server/cli.js"
+  need=22
+else
+  entry="$root/server/cli.ts"
+  need=24
+fi
+
+major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
 node=""
-for candidate in "$HOME"/.nvm/versions/node/v24.*/bin/node "$(command -v node || true)"; do
-  if [ -x "$candidate" ] && [ "$("$candidate" -p 'process.versions.node.split(".")[0]')" = "24" ]; then
+for candidate in "$(command -v node || true)" "$HOME"/.nvm/versions/node/v24.*/bin/node; do
+  if [ -x "$candidate" ] && [ "$(major "$candidate")" -ge "$need" ]; then
     node="$candidate"
+    break
   fi
 done
 if [ -z "$node" ]; then
-  echo "Beekeep needs Node 24. Install it with: nvm install 24" >&2
+  echo "Beekeep needs Node $need or newer. With nvm: nvm install 24" >&2
   exit 1
 fi
 
-exec env PATH="$(dirname "$node"):$PATH" "$node" --disable-warning=ExperimentalWarning "$root/server/cli.ts" "$@"
+exec env PATH="$(dirname "$node"):$PATH" "$node" --disable-warning=ExperimentalWarning "$entry" "$@"

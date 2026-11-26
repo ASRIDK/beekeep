@@ -6,7 +6,7 @@ export class Warden {
   private child: ChildProcess;
 
   constructor(command: string) {
-    this.child = spawn(process.execPath, [fileURLToPath(new URL('./warden-process.ts', import.meta.url)), command], {
+    this.child = spawn(process.execPath, [fileURLToPath(new URL(`./warden-process.${import.meta.url.endsWith('.ts') ? 'ts' : 'js'}`, import.meta.url)), command], {
       stdio: ['pipe', 'ignore', 'ignore'],
       detached: true,
     });

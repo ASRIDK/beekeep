@@ -11,7 +11,8 @@ import { Warden } from './warden.ts';
 
 const home = hiveHome();
 const port = Number(process.env.BEEKEEP_PORT ?? 3150);
-const root = fileURLToPath(new URL('..', import.meta.url));
+// The project folder; compiled code sits one folder deeper, in lib/.
+const root = fileURLToPath(new URL(import.meta.url.endsWith('.ts') ? '..' : '../..', import.meta.url));
 const dist = process.env.BEEKEEP_DIST ?? join(root, 'dist');
 
 mkdirSync(home, { recursive: true, mode: 0o700 });

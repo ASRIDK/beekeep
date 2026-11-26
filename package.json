@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=24"
+    "node": ">=22.13"
   },
   "scripts": {
     "start": "node --disable-warning=ExperimentalWarning server/main.ts",
@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:live": "node --disable-warning=ExperimentalWarning scripts/live-check.ts",
     "postinstall": "node scripts/postinstall.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build && rm -rf lib && npm run compile"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.332",
@@ -45,5 +47,24 @@
   "bin": {
     "beekeep": "bin/beekeep"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "files": [
+    "bin",
+    "lib",
+    "dist",
+    "mac",
+    "scripts/postinstall.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "agents",
+    "multi-agent",
+    "tui",
+    "terminal",
+    "orchestration",
+    "ai"
+  ]
 }

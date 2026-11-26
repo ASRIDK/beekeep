@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import { shellEnv } from './env.ts';
 import { hiveHome } from './paths.ts';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+// The project folder; compiled code sits one folder deeper, in lib/.
+const root = fileURLToPath(new URL(import.meta.url.endsWith('.ts') ? '..' : '../..', import.meta.url));
 const home = hiveHome();
 const logFile = join(home, 'server.log');
 const dist = process.env.BEEKEEP_DIST ?? join(root, 'dist');
@@ -40,7 +41,9 @@ function newest(dir: string): number {
 
 async function launch(): Promise<Server> {
   const page = join(dist, 'index.html');
-  if (!existsSync(page) || (!process.env.BEEKEEP_DIST && statSync(page).mtimeMs < newest(join(root, 'web')))) {
+  // From a clone, the window is built when its code changed; a package comes with it built.
+  const source = join(root, 'web');
+  if (!existsSync(page) || (!process.env.BEEKEEP_DIST && existsSync(source) && statSync(page).mtimeMs < newest(source))) {
     console.log('Building the window.');
     const built = spawnSync('npm', ['run', '-s', 'build'], { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] });
     if (built.status !== 0) throw new Error('The window could not be built.');
@@ -49,7 +52,7 @@ async function launch(): Promise<Server> {
   const log = openSync(logFile, 'a', 0o600);
   const child = spawn(
     process.execPath,
-    ['--disable-warning=ExperimentalWarning', join(root, 'server/main.ts')],
+    ['--disable-warning=ExperimentalWarning', fileURLToPath(new URL(`./main.${import.meta.url.endsWith('.ts') ? 'ts' : 'js'}`, import.meta.url))],
     { cwd: root, detached: true, stdio: ['ignore', log, log], env: shellEnv(process.env) },
   );
   let died = false;

@@ -17,7 +17,7 @@ const env = {
   BEEKEEP_PORT: process.env.BEEKEEP_PORT ?? '3159',
   BEEKEEP_DIST: process.env.BEEKEEP_DIST ?? join(root, 'dist'),
 } as Record<string, string>;
-const bin = join(root, 'bin/beekeep');
+const bin = process.env.BEEKEEP_BIN ?? join(root, 'bin/beekeep');
 execFileSync(bin, ['start'], { env, stdio: 'ignore' });
 
 const cols = 120;
