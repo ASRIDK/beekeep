@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Starts Beekeep if it is not running, then opens its window.
+#   hive          open the window
+#   beekeep status   is it running?
+#   beekeep stop     stop it (bees keep their memory)
+#   beekeep logs     show the server log
+set -euo pipefail
+
+self="${BASH_SOURCE[0]}"
+while [ -L "$self" ]; do
+  link="$(readlink "$self")"
+  case "$link" in /*) self="$link" ;; *) self="$(dirname "$self")/$link" ;; esac
+done
+root="$(cd "$(dirname "$self")/.." && pwd)"
+
+# Beekeep needs Node 24: newest one from nvm, else whatever is on the path.
+node=""
+for candidate in "$HOME"/.nvm/versions/node/v24.*/bin/node "$(command -v node || true)"; do
+  if [ -x "$candidate" ] && [ "$("$candidate" -p 'process.versions.node.split(".")[0]')" = "24" ]; then
+    node="$candidate"
+  fi
+done
+if [ -z "$node" ]; then
+  echo "Beekeep needs Node 24. Install it with: nvm install 24" >&2
+  exit 1
+fi
+
+exec env PATH="$(dirname "$node"):$PATH" "$node" --disable-warning=ExperimentalWarning "$root/server/cli.ts" "$@"
