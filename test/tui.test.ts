@@ -31,6 +31,8 @@ describe('the terminal screen', () => {
     expect(text(eventLines(ev('result', { ok: false, text: 'boom' }), bee, 60))).toContain('✗ boom');
     expect(text(eventLines(ev('turn', { ok: false, stopped: true }), bee, 60))).toContain('stopped');
     expect(text(eventLines(ev('order', { source: 'you', text: 'Fix it' }), bee, 60))).toContain('› you: Fix it');
+    expect(text(eventLines(ev('order', { source: 'q1', text: 'Task a: Write it\n\nlong brief\nmore' }), bee, 60))).toBe('\n› Task a: Write it');
+    expect(text(eventLines(ev('turn', { ok: true, ms: 12_400, tokensIn: 7_200, tokensOut: 500 }), bee, 60))).toBe('— done in 12 s · 7.7k tokens');
   });
 
   it('keeps the newest lines in view, with live typing last', () => {

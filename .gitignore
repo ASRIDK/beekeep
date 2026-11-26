@@ -9,3 +9,4 @@ dist-test/
 .playwright-mcp/
 .omc/
 /hive-*.png
+docs/demo.cast

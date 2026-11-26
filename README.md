@@ -1,86 +1,114 @@
-# Hive
+# beekeep
 
-A local, split-pane app to run, watch and lead a hive of Claude agents ("bees"). It runs on your own Claude subscription login, on your own computer, for you only.
+Lead a team of Claude Code agents from your terminal. A queen plans, workers do the work, you watch every step live, and everything that needs your yes waits in one place.
 
-## Start
+![A real beekeep session: a starter hive, the queen's plan approved with one key, two workers writing side by side, and a web request answered from the same screen](docs/demo.svg)
 
-You need macOS, Node 24 (`nvm install 24`) and Claude Code, signed in with your subscription (`claude auth login`).
+*A real session, recorded with [`scripts/record-demo.ts`](scripts/record-demo.ts). Only the long waits are cut.*
+
+## Why
+
+One Claude Code session is easy to follow. Five are not: they ask for permission in five places, you lose track of who is doing what, and each one starts by loading every tool, plugin and server you have.
+
+beekeep puts them on one screen:
+
+- **Every action, live.** Each bee (agent) shows what it reads, edits and runs as it happens. Show up to three side by side.
+- **One place for yes and no.** A bee that wants to run a command, open a web page or touch a file outside its folder waits in a single list. Answer with `y`, `n`, or `a` for "always" where that is safe.
+- **A queen who plans.** Give the queen a goal. She splits it into tasks for the workers, with their order and the files each one owns, and nothing starts until you press `y`. She checks the results and reports back.
+- **Light bees.** A bee gets only the tools you give it. A read-only bee starts with a few thousand tokens of context, not everything your Claude Code setup loads.
+- **Your login, never touched.** beekeep runs the Claude Code you already installed and logged into. It never sees, stores or asks for credentials.
+
+## Install
+
+You need [Claude Code](https://code.claude.com/docs/en/overview), installed and logged in (run `claude` once), and Node 22 or newer.
 
 ```sh
-npm install      # once
-bin/hive         # starts Hive if needed and opens its window
-bin/hive app     # optional: builds a small Mac app into ~/Applications
-bin/hive help    # every command
+npm install -g beekeep
+beekeep
 ```
 
-To type just `hive` anywhere, put a link or a small wrapper to `bin/hive` in a folder on your PATH, such as `~/.local/bin`.
+From source:
 
-After an update, run `bin/hive stop`, then `bin/hive`. Your data is brought forward by itself and a copy of the old file is kept next to it in `~/.hive`.
+```sh
+git clone https://github.com/ASRIDK/beekeep && cd beekeep
+npm install
+bin/beekeep        # Node 24 or newer runs the TypeScript directly
+```
+
+macOS and Linux. Two features need macOS for now: giving a bee its own git copy, and git status in the window's sidebar, because beekeep runs git inside a macOS sandbox there. On Linux, a bee with the shell turned on needs Claude Code's sandbox, which uses bubblewrap.
 
 ## Use
 
-- **Bees.** Add workers, and a queen to lead them. Enter sends an order; "Stop and do now" (Command Enter) interrupts. Your orders always go first.
-- **Queen.** Give her a goal. She proposes a plan; nothing starts before your yes. Hive runs the tasks in order, side by side where possible, keeps two tasks off the same file, and wakes her when the plan ends, a task fails or a bee asks. Plans stop at their limits.
-- **Needs you.** Plans, questions, shell commands, web pages and anything outside a bee's folder. "Always allow" covers only that exact command, site or tool, and can be taken back under Edit.
-- **Map and learning.** Links between bees get stronger when their messages and work help (her scores, your thumbs). This decides whom bees trust; it does not train Claude.
-- **Spaces.** Vertical tabs, each with its own folder, panes, bees, branch, pull request, ports and latest notice.
-- **Panes.** Bees, terminals, SSH, Claude Code, browser, plans, map, board, notices, usage, rules. Layout and terminals come back after a restart.
-- **Claude Code panes** are the full Claude Code with your own setup, plus Hive's MCP tools. They ring when they need you and resume their conversation.
-- **Notices** from bees, plans, Claude panes, `hive notify` and terminal programs (OSC 9, 99, 777), with a macOS alert when no window is in front.
-- **Rules** give orders daily, regularly, or when a bee finishes.
-- **Project commands** come from a `hive.json` in the space's folder: `{ "commands": [{ "name": "Dev server", "run": "npm run dev" }] }`. They ask for your yes first, and again whenever the file changes.
-- **Usage guard.** Holds new work below 20% of the 5-hour window or 10% of the week (Usage pane). Needs `quota-axi`.
+Run `beekeep`. The first time, press Enter for a starter hive: a queen on Sonnet and two workers on Haiku, working in `~/beekeep-work`.
 
-| Keys | |
+| Key | What it does |
 | --- | --- |
-| Command D, Shift D | Split right, down |
-| Command K | Task a bee |
-| Command P | Commands |
-| Command 1 to 9, B | Go to space, show or hide spaces |
-| Command T, Shift L | New terminal, new browser |
-| Command I, Shift U | Notices, jump to newest |
-| Command F, +, -, 0 | Find in terminal, text size |
-| Option Command arrows | Move between panes |
-| Command Shift ] and [ | Next and previous tab |
+| `↑` `↓` | choose a bee |
+| `Enter` | give the chosen bee an order. Start it with `!` to stop what the bee is doing and do this now. `Tab` asks for a plan first |
+| `Space` | pin the chosen bee so it stays on screen beside the next one (up to 3) |
+| `y` `n` `a` | answer what a bee asks: yes, no, always |
+| `Tab` | next question, when several bees ask |
+| `p` | see the queen's plan: `y` start it, `u` start it and let its bees edit files, `n` refuse |
+| `+` | add a bee: name, job (worker or queen), model, what it may do, shell or not |
+| `s` / `x` | stop the chosen bee / stop every bee |
+| `w` | open the full window in your browser |
+| `q` | leave the screen. Bees keep working; `beekeep stop` ends them |
 
-## What a bee may do
+The bees run in a small local server, so closing the screen or the terminal stops nothing. Run `beekeep` again to come back to where they are.
 
-| | Look | Work | Full |
-| --- | --- | --- | --- |
-| Read and search its folder, search the web | yes | yes | yes |
-| Open a web page, read outside its folder | asks | asks | asks |
-| Create and edit files in its folder | no | yes | yes |
-| Edit protected files or outside its folder | no | asks | asks |
-| Run a shell command, even a read-only one | no | asks, if given | asks, if given |
-| Helpers, to-do lists, skills, notebooks, questions | if given | if given | yes |
-| Schedules, cloud sessions, background commands | no | no | no |
+### More than the terminal
 
-MCP servers, skills, the browser and the folder's own Claude setup are given per bee under Abilities. Each makes the bee heavier. An order from the queen never gives a bee more permission than it has.
+`beekeep window` opens a fuller view in your browser: split panes you can drag, real terminals, Claude Code panes that report to the hive, a map of who talks to whom, a board, rules ("every morning, give this order"), and a usage page. On macOS, `beekeep app` builds a small native app for it.
 
-**Shell.** Off for new bees; it roughly doubles what a worker costs (about 12,100 tokens to start instead of 7,700). When on, approved commands are confined by default: they can change only the bee's folder, cannot read your keys or Hive's own data, need a separate yes for each website, and cannot leave the sandbox. A bee you un-confine runs approved commands with your full rights.
-
-**Own git copy.** A bee can work in a complete, separate copy under `~/hive-copies`, on its own branch. It cannot touch your repository. "Bring into my repository" (under Edit) adds its commits there as a branch; nothing of yours changes until you merge it. Hive never deletes copies. Do not run git inside a copy yourself: a bee may have changed its settings.
-
-Orders from the command line and from other Claude sessions can never approve anything.
-
-## Other Claude sessions
+Everything is also scriptable:
 
 ```sh
-claude mcp add hive -- /full/path/to/bin/hive mcp
+beekeep bees                       # who is there, and what they are doing
+beekeep order "Worker 1" "Run the tests and fix what fails"
+beekeep plans                      # the queen's plans and their tasks
+beekeep mcp                        # an MCP server, so another Claude Code session can task your bees
 ```
 
-They can list bees, give orders, check on them, and use the board.
+The command line and MCP can give orders and read everything, but they can never approve a request, change a bee, or start a plan. Only you can, from the screen or the window.
 
-## How it is built
+## Your Claude login and usage
 
-`server/` runs on Node without a build step; `web/` is the window; `mac/` is the Mac app.
+beekeep starts bees through Anthropic's [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview), which runs your installed `claude`. Each bee uses whatever Claude Code is logged into, and its usage counts against your own account. On Claude subscription plans, Agent SDK usage draws from its own monthly credit; see Anthropic's documentation for the current rules.
+
+- beekeep never handles a login. Anthropic does not allow apps to offer Claude.ai login or to share one person's plan with others ([legal and compliance](https://code.claude.com/docs/en/legal-and-compliance)). Use beekeep with your own login, for yourself.
+- API keys and cloud providers (`ANTHROPIC_API_KEY`, Bedrock, Vertex) are ignored unless you start beekeep with `BEEKEEP_API_KEY=1`, so a key that happens to be set never bills you by surprise.
+- With [quota-axi](https://github.com/kunchenguid/quota-axi) installed, beekeep shows how much of your plan's limits is left and holds new work back below limits you choose.
+
+## Safety
+
+Bees read web pages and files that may try to steer them. beekeep assumes that, and keeps you in charge:
+
+- **What a bee may do is yours to set.** Look (read and search), Work (also edit inside its folder), or Full (all of Claude Code's tools). Background work, schedules and cloud sessions are left out, so nothing runs out of sight.
+- **Shell commands are off for new bees.** When on, each command asks you first and runs in a sandbox that can change only the bee's folder, cannot read your keys or beekeep's own data, and reaches the internet only after its own yes.
+- **"Always" is narrow.** It covers one exact command, one website or one tool. Never file access, and never an address that could be read two ways.
+- **Orders never widen permissions.** A queen's task gives a worker nothing it did not already have. Plans have limits on orders, wake-ups and time.
+- **Own git copies (macOS).** A bee can work in a full, separate copy of your repository. Its commits come back as a branch only when you ask; nothing it does can touch your repository.
+- **Local only.** The server listens on 127.0.0.1 behind a secret. Other websites in your browser cannot reach it, and the screen strips terminal control codes from anything a bee or page produces.
+
+## Settings
+
+| Variable | Default | |
+| --- | --- | --- |
+| `BEEKEEP_WORK` | `~/beekeep-work` | where new bees work |
+| `BEEKEEP_HOME` | `~/.beekeep` | beekeep's own data |
+| `BEEKEEP_PORT` | `3150` | the local server's port |
+| `BEEKEEP_API_KEY` | off | `1` lets bees use an API key or cloud provider |
+
+## Develop
 
 ```sh
-npm test            # no Claude usage
-npm run test:live   # live bee checks on Haiku, uses a little of your plan
-node scripts/live-abilities.ts   # sandbox, git copy, skills, MCP, browser and more, live
-node scripts/live-team.ts   # a live queen building a page, uses the most
-npm run typecheck
+npm test                               # unit and integration tests, no Claude needed
+node scripts/screen-check.ts           # drives the terminal screen in a hidden terminal
+LIVE=1 node scripts/screen-check.ts    # the same with real Claude (uses a little of your usage)
 ```
 
-`HIVE_HOME`, `HIVE_WORK`, `HIVE_PORT` and `HIVE_DIST` change where things live.
+The server is in `server/`, the terminal screen in `tui/`, the browser window in `web/`.
+
+## License
+
+MIT. beekeep is an independent project, not made or endorsed by Anthropic.

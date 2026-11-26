@@ -13,25 +13,26 @@ while [ -L "$self" ]; do
 done
 root="$(cd "$(dirname "$self")/.." && pwd)"
 
-# Installed from npm, Beekeep runs compiled JavaScript; from a clone, its TypeScript.
-if [ -f "$root/lib/server/cli.js" ]; then
-  entry="$root/lib/server/cli.js"
-  need=22
-else
-  entry="$root/server/cli.ts"
-  need=24
-fi
-
 major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
-node=""
-for candidate in "$(command -v node || true)" "$HOME"/.nvm/versions/node/v24.*/bin/node; do
-  if [ -x "$candidate" ] && [ "$(major "$candidate")" -ge "$need" ]; then
-    node="$candidate"
-    break
-  fi
-done
-if [ -z "$node" ]; then
-  echo "Beekeep needs Node $need or newer. With nvm: nvm install 24" >&2
+# The first Node at least this new, from the path or nvm.
+pick() {
+  for candidate in "$(command -v node || true)" "$HOME"/.nvm/versions/node/v2*/bin/node; do
+    if [ -x "$candidate" ] && [ "$(major "$candidate")" -ge "$1" ]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# From a clone, Beekeep runs its TypeScript as it is (Node 24 reads it directly);
+# installed from npm, it runs the compiled JavaScript that comes with it.
+if [ -f "$root/server/cli.ts" ] && node="$(pick 24)"; then
+  entry="$root/server/cli.ts"
+elif [ -f "$root/lib/server/cli.js" ] && node="$(pick 22)"; then
+  entry="$root/lib/server/cli.js"
+else
+  echo "Beekeep needs Node 24 (or 22 for an installed package). With nvm: nvm install 24" >&2
   exit 1
 fi
 

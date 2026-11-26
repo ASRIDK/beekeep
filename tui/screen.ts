@@ -82,6 +82,12 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
   const plan = v.plans.find((p) => p.status === 'proposed');
 
   const say = (text: string, bad = false) => setNote({ text, bad });
+  // Good news fades; problems stay until the next action.
+  useEffect(() => {
+    if (!note || note.bad) return;
+    const t = setTimeout(() => setNote(null), 6000);
+    return () => clearTimeout(t);
+  }, [note]);
   const run = (op: string, args: unknown, done?: string) =>
     link.call(op, args).then(
       () => (done ? say(done) : setNote(null)),

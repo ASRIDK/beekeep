@@ -48,7 +48,8 @@ export function eventLines(e: EventRow, bee: BeeView | undefined, width: number)
   const helper = d.helper ? '  ' : '';
   switch (e.kind) {
     case 'order':
-      return [{ text: '' }, ...lines(`› ${d.source === 'you' ? 'you' : 'order'}: ${first(d.text, 6)}`, { color: 'cyan', bold: true })];
+      // Your own orders in full; a task from the queen by its title line.
+      return [{ text: '' }, ...lines(d.source === 'you' ? `› you: ${first(d.text, 6)}` : `› ${first(d.text, 1)}`, { color: 'cyan', bold: true })];
     case 'say':
       return lines(helper + first(d.text, 40));
     case 'think':
@@ -56,7 +57,7 @@ export function eventLines(e: EventRow, bee: BeeView | undefined, width: number)
     case 'action': {
       const tool = String(d.tool);
       const what = toolSummary(tool, (d.input ?? {}) as Record<string, unknown>, bee?.workspace ?? '');
-      return lines(`${helper}⏺ ${toolWord(tool)} ${first(what, 1)}`, { color: 'blue' });
+      return lines(`${helper}⏺ ${toolWord(tool)} ${first(what, 1)}`, { color: 'blue' }).slice(0, 2);
     }
     case 'result':
       return d.ok === false ? lines(`${helper}  ✗ ${first(d.text, 2)}`, { color: 'red' }) : [];
@@ -71,8 +72,10 @@ export function eventLines(e: EventRow, bee: BeeView | undefined, width: number)
       return lines(`✗ ${first(d.text, 3)}`, { color: 'red' });
     case 'turn': {
       if (d.ok === false) return lines(d.stopped ? '■ stopped' : `✗ ${first((d.errors as string[] | undefined)?.[0] ?? 'failed', 2)}`, { color: 'red' });
-      const secs = Number(d.durationMs ?? 0) / 1000;
-      return lines(`— done in ${secs < 10 ? secs.toFixed(1) : Math.round(secs)} s`, { dim: true });
+      const secs = Number(d.ms ?? 0) / 1000;
+      const tokens = Number(d.tokensIn ?? 0) + Number(d.tokensOut ?? 0);
+      const size = tokens ? ` · ${tokens < 1000 ? tokens : `${(tokens / 1000).toFixed(1)}k`} tokens` : '';
+      return lines(`— done in ${secs < 10 ? secs.toFixed(1) : Math.round(secs)} s${size}`, { dim: true });
     }
     default:
       return [];
