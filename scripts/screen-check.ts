@@ -1,7 +1,7 @@
 // Runs the terminal screen inside a hidden terminal, presses keys, and checks what
 // it shows. Uses no Claude: no order is sent. Run: node scripts/screen-check.ts
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,6 +76,31 @@ try {
   check('? lists the keys', s.includes('answer what a bee asks'), s);
   await press('x');
   await new Promise((r) => setTimeout(r, 200));
+
+  if (process.env.LIVE === '1') {
+    // Real Claude from here on: a question answered from the screen, then a plan.
+    await press('k', 'k', 'k', 'k', 'j');
+    await press('o', ...'Fetch https://example.com and tell me the page title, in five words or fewer.', '\r');
+    s = await wait('y yes · n no', 120_000);
+    check('a bee’s question shows in the one place for answers', /example\.com/.test(s), s);
+    await press('y');
+    s = await wait(/— done in/, 180_000);
+    check('after a yes the bee finishes its order', /Example Domain/i.test(s), s);
+    await press('k');
+    await press('o', ...'Make a plan: Worker 1 writes hello.txt containing hi, Worker 2 writes bye.txt containing bye. Nothing else.', '\r');
+    s = await wait('has a plan for you', 180_000);
+    await press('p');
+    s = await wait('y start it', 10_000);
+    check('the queen’s plan shows its tasks before anything starts', /hello/i.test(s) && /bye/i.test(s), s);
+    await press('y');
+    const work = env.BEEKEEP_WORK!;
+    for (let i = 0; i < 300 && !(existsSync(join(work, 'hello.txt')) && existsSync(join(work, 'bye.txt'))); i++) {
+      if (screen().includes('y yes · n no')) await press('y');
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    check('one yes runs the plan on both workers', existsSync(join(work, 'hello.txt')) && existsSync(join(work, 'bye.txt')), screen());
+  }
+
   await press('q');
   for (let i = 0; i < 50 && !screen().includes('$') && !screen().includes('%'); i++) await new Promise((r) => setTimeout(r, 100));
   const bees = execFileSync(bin, ['bees'], { env, encoding: 'utf8' });
