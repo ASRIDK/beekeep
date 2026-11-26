@@ -7,7 +7,11 @@ import { dirname } from 'node:path';
 
 let found: { git: string; parts: string } | null = null;
 
+/** Whether Beekeep can run git safely in folders bees write to. */
+export const SAFE_GIT = process.platform === 'darwin';
+
 function where(): { git: string; parts: string } {
+  if (!SAFE_GIT) throw new Error('This needs macOS for now: Beekeep runs git in a sandbox there.');
   if (found) return found;
   // /usr/bin/git only hands over to the real one, which the sandbox must name.
   const git = realpathSync(execFileSync('/usr/bin/xcrun', ['-f', 'git'], { encoding: 'utf8' }).trim());

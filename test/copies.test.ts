@@ -41,7 +41,7 @@ afterEach(() => {
   store.close();
 });
 
-describe('a bee’s own copy', () => {
+describe.skipIf(process.platform !== 'darwin')('a bee’s own copy', () => {
   it('is a separate repository, and leaves the person’s files alone', async () => {
     const b = await withCopy(join(repo, 'web'));
     expect(b.origin).toBe(join(repo, 'web'));

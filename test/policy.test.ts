@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { assertSubscription, beeEnv, sandboxFor } from '../server/driver.ts';
+import { beeEnv, loginOf, sandboxFor } from '../server/driver.ts';
 import { hiveHome, isInside, prepareWorkspace } from '../server/paths.ts';
 import { grantFor, judge, toolsFor } from '../server/policy.ts';
 import { type BeeRow, NO_ABILITIES } from '../server/types.ts';
@@ -234,24 +234,30 @@ describe('workspaces', () => {
   });
 });
 
-describe('subscription only', () => {
-  it('strips keys and provider switches from a bee’s environment', () => {
-    const env = beeEnv({
-      PATH: '/bin',
-      ANTHROPIC_API_KEY: 'sk-fake',
-      ANTHROPIC_AUTH_TOKEN: 't',
-      ANTHROPIC_BASE_URL: 'http://x',
-      CLAUDE_CODE_USE_BEDROCK: '1',
-      CLAUDECODE: '1',
-      CLAUDE_CONFIG_DIR: '/cfg',
+describe('logins', () => {
+  const env = {
+    PATH: '/bin',
+    ANTHROPIC_API_KEY: 'sk-fake',
+    ANTHROPIC_BASE_URL: 'http://x',
+    CLAUDE_CODE_USE_BEDROCK: '1',
+    CLAUDE_CODE_OAUTH_TOKEN: 'o',
+    CLAUDECODE: '1',
+    CLAUDE_CODE_ENTRYPOINT: 'cli',
+    CLAUDE_CONFIG_DIR: '/cfg',
+  };
+
+  it('leaves keys and providers out unless the person turns them on', () => {
+    expect(beeEnv(env)).toEqual({ PATH: '/bin', CLAUDE_CONFIG_DIR: '/cfg', CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' });
+    expect(beeEnv({ ...env, BEEKEEP_API_KEY: '1' })).toEqual({
+      PATH: '/bin', BEEKEEP_API_KEY: '1', ANTHROPIC_API_KEY: 'sk-fake', ANTHROPIC_BASE_URL: 'http://x', CLAUDE_CODE_USE_BEDROCK: '1',
+      CLAUDE_CODE_OAUTH_TOKEN: 'o', CLAUDE_CONFIG_DIR: '/cfg', CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1',
     });
-    expect(env).toEqual({ PATH: '/bin', CLAUDE_CONFIG_DIR: '/cfg', CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' });
   });
 
-  it('accepts a subscription and refuses anything else', () => {
-    expect(() => assertSubscription({ subscriptionType: 'pro', apiProvider: 'firstParty' })).not.toThrow();
-    expect(() => assertSubscription({ subscriptionType: 'pro', apiKeySource: 'ANTHROPIC_API_KEY' })).toThrow();
-    expect(() => assertSubscription({ apiKeySource: 'none' })).toThrow();
-    expect(() => assertSubscription({ subscriptionType: 'pro', apiProvider: 'bedrock' })).toThrow();
+  it('says what a bee runs on, and explains a missing login', () => {
+    expect(loginOf({ subscriptionType: 'max', apiProvider: 'firstParty' })).toBe('your Claude max plan');
+    expect(loginOf({ apiKeySource: 'ANTHROPIC_API_KEY' })).toBe('an API key (ANTHROPIC_API_KEY)');
+    expect(loginOf({ apiProvider: 'bedrock' })).toBe('your bedrock account');
+    expect(() => loginOf({ apiKeySource: 'none' })).toThrow(/not logged in/);
   });
 });

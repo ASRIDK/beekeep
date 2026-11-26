@@ -102,7 +102,8 @@ function openWindow(url: string): void {
   }
   const chrome = '/Applications/Google Chrome.app';
   const args = existsSync(chrome) ? ['-na', 'Google Chrome', '--args', `--app=${url}`] : [url];
-  spawn('open', args, { stdio: 'ignore', detached: true }).unref();
+  if (process.platform === 'darwin') spawn('open', args, { stdio: 'ignore', detached: true }).unref();
+  else spawn('xdg-open', [url], { stdio: 'ignore', detached: true }).unref();
 }
 
 const HELP = `beekeep                          open the window (starts Beekeep if needed)

@@ -4,7 +4,7 @@
 import { closeSync, constants, existsSync, fstatSync, mkdirSync, mkdtempSync, openSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { basename, join, relative, sep } from 'node:path';
-import { git } from './safegit.ts';
+import { git, SAFE_GIT } from './safegit.ts';
 
 /** For work that grows with the size of a project. */
 const LONG = 10 * 60_000;
@@ -39,6 +39,7 @@ export function copyRoot(path: string): string | null {
 }
 
 export async function makeCopy(folder: string, name: string, id: string): Promise<Copy> {
+  if (!SAFE_GIT) throw new Error('Own git copies need macOS for now.');
   let top: string;
   try {
     top = realpathSync(await git(folder, ['rev-parse', '--show-toplevel']));

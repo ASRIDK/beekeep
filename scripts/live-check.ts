@@ -82,7 +82,7 @@ async function first() {
   const bee = h.hive.createBee({ name: 'Scout', mode: 'work', model: 'haiku', workspace: ws });
 
   let r = await run(h, bee.id, 'Reply with exactly: ready', false);
-  check('subscription used, fake API key ignored', r.status === 'done', r.said);
+  check('own login used, stray API key ignored', r.status === 'done', r.said);
   // About 5,000 of this is the shell and its sandbox.
   check('work bee with a shell starts under 13,000 tokens', r.tokensIn > 0 && r.tokensIn < 13_000, `${r.tokensIn} tokens`);
   const light = h.hive.createBee({ name: 'Light', mode: 'work', model: 'haiku', workspace: ws, abilities: { ...NO_ABILITIES, shell: false } });

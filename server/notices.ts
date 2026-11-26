@@ -7,8 +7,12 @@ export type NewNotice = Pick<NoticeRow, 'kind' | 'spaceId' | 'source' | 'title' 
 
 const QUIET_MS = 3000;
 
-/** A macOS alert. Text is passed as arguments, never as part of the script. */
+/** A desktop alert. Text is passed as arguments, never as part of a script. */
 export function macAlert(title: string, body: string): void {
+  if (process.platform !== 'darwin') {
+    execFile('notify-send', ['--', title, body], { timeout: 5000 }, () => {});
+    return;
+  }
   execFile(
     '/usr/bin/osascript',
     [

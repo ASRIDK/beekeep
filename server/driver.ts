@@ -97,15 +97,22 @@ class Inbox implements AsyncIterable<SDKUserMessage> {
 }
 
 /**
- * Environment for a bee: the person's own, minus anything that could switch
- * billing to an API key, another provider, or an outer Claude session.
+ * Environment for a bee: the person's own, without traces of an outer Claude
+ * session. Bees use whatever Claude Code is logged into. API keys and other
+ * providers are left out unless the person turns them on with BEEKEEP_API_KEY=1,
+ * so nobody is billed by surprise for a key that happens to be set.
  */
 export function beeEnv(env: NodeJS.ProcessEnv): Record<string, string> {
-  const keep = new Set(['CLAUDE_CONFIG_DIR', 'CLAUDE_CODE_OAUTH_TOKEN']);
+  const keep = new Set(['CLAUDE_CONFIG_DIR']);
+  const keys = env.BEEKEEP_API_KEY === '1';
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(env)) {
-    if (value === undefined) continue;
-    if (!keep.has(key) && /^(ANTHROPIC_|CLAUDE|AWS_BEARER_TOKEN_BEDROCK)/.test(key)) continue;
+    if (value === undefined || keep.has(key)) {
+      if (value !== undefined) out[key] = value;
+      continue;
+    }
+    const billing = /^(ANTHROPIC_|AWS_BEARER_TOKEN_BEDROCK$|CLAUDE_CODE_USE_(BEDROCK|VERTEX)$|CLAUDE_CODE_OAUTH_TOKEN$)/.test(key);
+    if (billing ? !keys : /^CLAUDE/.test(key)) continue;
     out[key] = value;
   }
   // A bee acts only while it has an order.
@@ -113,15 +120,15 @@ export function beeEnv(env: NodeJS.ProcessEnv): Record<string, string> {
   return out;
 }
 
-/** Refuses to run unless the login is a Claude subscription. */
-export function assertSubscription(info: AccountInfo): void {
-  const key = info.apiKeySource;
-  const usesKey = key !== undefined && key !== 'none' && key !== 'oauth';
-  if (usesKey || !info.subscriptionType || (info.apiProvider && info.apiProvider !== 'firstParty')) {
-    throw new Error(
-      'Beekeep only runs on a Claude subscription, and this login does not look like one. Run `claude auth login` and try again.',
-    );
-  }
+/**
+ * What a bee runs on, in words. Beekeep never handles a login itself: this is
+ * whatever the person's own Claude Code uses.
+ */
+export function loginOf(info: AccountInfo): string {
+  if (info.apiProvider && info.apiProvider !== 'firstParty') return `your ${info.apiProvider} account`;
+  if (info.subscriptionType) return `your Claude ${info.subscriptionType} plan`;
+  if (info.apiKeySource && info.apiKeySource !== 'none') return `an API key (${info.apiKeySource})`;
+  throw new Error('Claude Code is not logged in. Run `claude` once, log in, then try again.');
 }
 
 const QUEEN = [
@@ -284,7 +291,7 @@ export function sdkStarter(claudePath: string, warden: Warden, log: (line: strin
 
     const q = query({ prompt: inbox, options });
     try {
-      assertSubscription(await within(START_LIMIT_MS, q.accountInfo(), 'Claude Code did not start in time.'));
+      log(`${bee.name} runs on ${loginOf(await within(START_LIMIT_MS, q.accountInfo(), 'Claude Code did not start in time.'))}.`);
     } catch (err) {
       inbox.close();
       abort.abort();
