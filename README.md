@@ -1,5 +1,7 @@
 # beekeep
 
+[![CI](https://github.com/ASRIDK/beekeep/actions/workflows/ci.yml/badge.svg)](https://github.com/ASRIDK/beekeep/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Lead a team of Claude Code agents from your terminal. A queen plans, workers do the work, you watch every step live, and everything that needs your yes waits in one place.
 
 ![A real beekeep session: a starter hive, the queen's plan approved with one key, two workers writing side by side, and a web request answered from the same screen](docs/demo.svg)
