@@ -2,8 +2,9 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findClaude } from './claude.ts';
-import { sdkStarter } from './driver.ts';
+import { findCodex, findTool } from './claude.ts';
+import { codexCommand, codexStarter } from './codex.ts';
+import { sdkStarter, type StartDriver } from './driver.ts';
 import { createHttp } from './http.ts';
 import { hiveHome } from './paths.ts';
 import { assemble } from './assemble.ts';
@@ -18,11 +19,19 @@ const dist = process.env.BEEKEEP_DIST ?? join(root, 'dist');
 mkdirSync(home, { recursive: true, mode: 0o700 });
 
 const token = randomBytes(32).toString('base64url');
-const claude = findClaude();
-const warden = new Warden(claude);
+const claude = findTool('claude', process.env.BEEKEEP_CLAUDE);
+const codex = findCodex();
+const warden = new Warden();
+const log = (line: string) => console.error(line);
+const onClaude: StartDriver = claude
+  ? sdkStarter(claude, warden, log)
+  : async () => {
+      throw new Error('Claude Code was not found. Install it, then run `claude auth login`.');
+    };
+const onCodex = codexStarter(codex ? codexCommand(codex) : null, warden, log);
 const ctx = assemble({
   file: join(home, 'hive.db'),
-  start: sdkStarter(claude, warden, (line) => console.error(line)),
+  start: (bee, hooks) => (bee.agent === 'codex' ? onCodex : onClaude)(bee, hooks),
   hiveCommand: join(root, 'bin/beekeep'),
 });
 const { server, close, windows } = createHttp({ ctx, token, dist, onStop: () => stop(true) });

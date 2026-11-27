@@ -4,14 +4,18 @@
 import { execFileSync } from 'node:child_process';
 import { createInterface } from 'node:readline';
 
-const bees = new Set<number>();
-const command = process.argv[2] ?? '';
+// Each bee is known by the command it ran when it was registered, so a process
+// number reused by something else later is never ended by mistake.
+const bees = new Map<number, string>();
 
 createInterface({ input: process.stdin })
   .on('line', (line) => {
     const pid = Number(line.slice(1));
     if (!Number.isInteger(pid) || pid < 2) return;
-    if (line[0] === '+') bees.add(pid);
+    if (line[0] === '+') {
+      const command = commandOf(pid);
+      if (command) bees.set(pid, command);
+    }
     if (line[0] === '-') bees.delete(pid);
   })
   .on('close', () => {
@@ -28,8 +32,8 @@ process.on('SIGTERM', () => {});
 process.on('SIGHUP', () => {});
 
 function end(signal: NodeJS.Signals): void {
-  for (const pid of bees) {
-    if (!isBee(pid)) continue;
+  for (const [pid, command] of bees) {
+    if (commandOf(pid) !== command) continue;
     try {
       process.kill(pid, signal);
     } catch {
@@ -39,10 +43,10 @@ function end(signal: NodeJS.Signals): void {
 }
 
 /** Process numbers get reused, so make sure this is still Claude Code. */
-function isBee(pid: number): boolean {
+function commandOf(pid: number): string | null {
   try {
-    return execFileSync('/bin/ps', ['-o', 'command=', '-p', String(pid)], { encoding: 'utf8' }).startsWith(command);
+    return execFileSync('/bin/ps', ['-o', 'command=', '-p', String(pid)], { encoding: 'utf8' }).trim() || null;
   } catch {
-    return false;
+    return null;
   }
 }

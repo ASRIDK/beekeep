@@ -19,6 +19,7 @@ type Mode =
 
 interface NewBee {
   name: string;
+  agent: 'claude' | 'codex';
   kind: 'worker' | 'queen';
   model: string;
   mode: 'look' | 'work' | 'full';
@@ -26,12 +27,16 @@ interface NewBee {
 }
 
 const CHOICES = {
+  agent: ['claude', 'codex'],
   kind: ['worker', 'queen'],
   model: ['haiku', 'sonnet', 'opus'],
   mode: ['look', 'work', 'full'],
   shell: [false, true],
 } as const;
-const FIELDS = ['name', 'kind', 'model', 'mode', 'shell'] as const;
+const FIELDS = ['name', 'agent', 'kind', 'model', 'mode', 'shell'] as const;
+
+/** The models each agent offers here; Codex uses whatever its own settings choose. */
+const MODEL_CHOICES = { claude: ['haiku', 'sonnet', 'opus'], codex: ['default'] } as const;
 
 const abilities = (shell: boolean): Abilities => ({ ...NO_ABILITIES, shell });
 
@@ -121,7 +126,7 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
         setMode({ kind: 'normal' });
         void run(
           'bee.create',
-          { name: bee.name.trim(), kind: bee.kind, model: bee.model, mode: bee.mode, workspace: v.defaults.workspace, abilities: abilities(bee.shell) },
+          { name: bee.name.trim(), agent: bee.agent, kind: bee.kind, model: bee.model, mode: bee.mode, workspace: v.defaults.workspace, abilities: abilities(bee.shell) },
           `${bee.name.trim()} joined the hive.`,
         );
         return;
@@ -132,10 +137,14 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
         return;
       }
       if (key.leftArrow || key.rightArrow || input === ' ') {
-        const list = CHOICES[field] as readonly (string | boolean)[];
+        const list = (field === 'model' ? MODEL_CHOICES[bee.agent] : CHOICES[field]) as readonly (string | boolean)[];
         const at = list.indexOf(bee[field]);
         const next = list[(at + (key.leftArrow ? list.length - 1 : 1)) % list.length];
-        setMode({ ...mode, bee: { ...bee, [field]: next } });
+        const changed = { ...bee, [field]: next } as NewBee;
+        // A Codex bee is a worker for now, on Codex's own model choice.
+        if (field === 'agent') Object.assign(changed, next === 'codex' ? { model: 'default', kind: 'worker', shell: true } : { model: 'haiku', shell: false });
+        if (changed.agent === 'codex' && changed.kind === 'queen') changed.kind = 'worker';
+        setMode({ ...mode, bee: changed });
       }
       return;
     }
@@ -164,7 +173,7 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
     if (key.upArrow || input === 'k') return setSel((s) => Math.max(0, s - 1));
     if (key.downArrow || input === 'j') return setSel((s) => Math.min(bees.length - 1, s + 1));
     if (input === '+' || input === 'c') {
-      return setMode({ kind: 'new', field: 0, bee: { name: `Worker ${bees.length}`, kind: 'worker', model: 'haiku', mode: 'work', shell: false } });
+      return setMode({ kind: 'new', field: 0, bee: { name: `Worker ${bees.length}`, agent: 'claude', kind: 'worker', model: 'haiku', mode: 'work', shell: false } });
     }
     if (bees.length === 0 && key.return) return void starter();
     if (input === 'w') return void openWindow().then(() => say('Opened the window.'), (err: Error) => say(err.message, true));
@@ -253,9 +262,14 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
     );
   } else if (mode.kind === 'new') {
     const b = mode.bee;
-    const value = (f: (typeof FIELDS)[number]) =>
-      f === 'name' ? b.name + (mode.field === 0 ? '█' : '') : f === 'shell' ? (b.shell ? 'yes (heavier, each command asks you)' : 'no') : String(b[f]);
-    const words = { name: 'Name', kind: 'Job', model: 'Model', mode: 'May do', shell: 'Shell' } as const;
+    const value = (f: (typeof FIELDS)[number]) => {
+      if (f === 'name') return b.name + (mode.field === 0 ? '█' : '');
+      if (f === 'agent') return b.agent === 'codex' ? 'Codex (your codex login; a worker)' : 'Claude Code (your claude login)';
+      if (f === 'shell') return b.agent === 'codex' ? (b.shell ? 'yes: each command asks you, except safe read-only ones' : 'only safe read-only commands') : b.shell ? 'yes (heavier, each command asks you)' : 'no';
+      if (f === 'model' && b.model === 'default') return 'Codex’s default';
+      return String(b[f]);
+    };
+    const words = { name: 'Name', agent: 'Agent', kind: 'Job', model: 'Model', mode: 'May do', shell: 'Shell' } as const;
     main = h(Box, { flexDirection: 'column', borderStyle: 'round', borderColor: 'cyan', paddingX: 1, flexGrow: 1 },
       h(Text, { bold: true }, 'New bee'),
       ...FIELDS.map((f, i) => h(Text, { key: f, inverse: i === mode.field }, ` ${words[f].padEnd(8)} ${value(f)} `)),
@@ -283,7 +297,7 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
     main = h(Box, { flexGrow: 1 },
       ...panes.map((b) =>
         h(Box, { key: b.id, flexDirection: 'column', borderStyle: 'round', borderColor: b.id === cur?.id ? 'cyan' : 'gray', paddingX: 1, flexGrow: 1, flexBasis: 0, overflow: 'hidden' },
-          h(Text, { wrap: 'truncate-end' }, h(Text, { bold: true }, beeLabel(b)), h(Text, { dimColor: true }, ` · ${b.model} · ${b.mode}`), h(Text, { color: GLYPH[b.status].color }, ` · ${statusWord(b)}`)),
+          h(Text, { wrap: 'truncate-end' }, h(Text, { bold: true }, beeLabel(b)), h(Text, { dimColor: true }, ` · ${b.agent === 'codex' ? `codex${b.model === 'default' ? '' : ` ${b.model}`}` : b.model} · ${b.mode}`), h(Text, { color: GLYPH[b.status].color }, ` · ${statusWord(b)}`)),
           ...paneLines(v.events[b.id] ?? [], b, v.typing[b.id] ?? '', paneWidth, bodyRows - 3).map(show),
         ),
       ),
@@ -296,6 +310,7 @@ function App({ link, openWindow }: { link: Link; openWindow: () => Promise<void>
       h(Text, { key: b.id, inverse: i === sel, wrap: 'truncate-end' },
         h(Text, { color: GLYPH[b.status].color }, `${GLYPH[b.status].mark} `),
         beeLabel(b),
+        b.agent === 'codex' ? h(Text, { color: 'cyan' }, ' ✦') : null,
         shown.includes(b.id) ? h(Text, { dimColor: true }, ' ▣') : null,
       ),
     ),

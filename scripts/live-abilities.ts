@@ -29,7 +29,7 @@ const { Warden } = await import('../server/warden.ts');
 const { NO_ABILITIES } = await import('../server/types.ts');
 type ApprovalRow = import('../server/types.ts').ApprovalRow;
 
-const warden = new Warden(findClaude());
+const warden = new Warden();
 const ctx = assemble({
   file: join(home, 'hive.db'),
   hiveCommand: '/bin/echo',

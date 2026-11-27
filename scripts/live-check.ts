@@ -24,7 +24,7 @@ function check(name: string, ok: boolean, extra: unknown = '') {
 
 function open() {
   const store = new Store(join(dir, 'hive.db'));
-  const warden = new Warden(findClaude());
+  const warden = new Warden();
   const hive = new Hive({ store, start: sdkStarter(findClaude(), warden, (l) => console.log('   stderr:', l)) });
   hive.recover();
   return { store, hive };

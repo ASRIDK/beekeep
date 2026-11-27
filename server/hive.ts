@@ -7,7 +7,7 @@ import { normalize, typingDelta } from './normalize.ts';
 import { prepareWorkspace } from './paths.ts';
 import { grantFor, judge, type Situation, type Verdict, withSite } from './policy.ts';
 import type { Store } from './store.ts';
-import {
+import { type Agent,
   type ApprovalRow,
   type BeeRow,
   type BeeStatus,
@@ -54,7 +54,7 @@ export interface HiveOptions {
 
 export type BeeFields = Pick<
   BeeRow,
-  'name' | 'kind' | 'role' | 'model' | 'effort' | 'mode' | 'workspace' | 'abilities' | 'grants' | 'autoPlan' | 'spaceId' | 'confined'
+  'agent' | 'name' | 'kind' | 'role' | 'model' | 'effort' | 'mode' | 'workspace' | 'abilities' | 'grants' | 'autoPlan' | 'spaceId' | 'confined'
 >;
 export type NewBee = Pick<BeeFields, 'name' | 'workspace'> & Partial<Omit<BeeFields, 'name' | 'workspace'>>;
 
@@ -197,13 +197,15 @@ export class Hive extends EventEmitter {
   }
 
   createBee(input: NewBee, given?: Given): BeeView {
+    const agent = input.agent ?? 'claude';
     const row: BeeRow = {
       id: given?.id ?? newId(),
+      agent,
       spaceId: input.spaceId ?? 'main',
       name: this.checkName(input.name),
-      kind: input.kind ?? 'worker',
+      kind: checkKind(agent, input.kind ?? 'worker'),
       role: input.role?.trim() ?? '',
-      model: checkModel(input.model ?? (input.kind === 'queen' ? 'sonnet' : 'haiku')),
+      model: checkModel(agent, input.model ?? (agent === 'codex' ? 'default' : input.kind === 'queen' ? 'sonnet' : 'haiku')),
       effort: checkEffort(input.effort ?? null),
       mode: checkMode(input.mode ?? 'look'),
       workspace: prepareWorkspace(input.workspace),
@@ -230,9 +232,15 @@ export class Hive extends EventEmitter {
     if (b.order) throw new Error('Stop the bee before changing it.');
     const next = { ...b.row };
     if (change.name !== undefined) next.name = this.checkName(change.name, id);
+    if (change.agent !== undefined && change.agent !== next.agent) {
+      next.agent = change.agent;
+      next.model = change.agent === 'codex' ? 'default' : 'haiku';
+      next.sessionId = null; // One agent cannot pick up another's conversation.
+    }
     if (change.kind !== undefined) next.kind = change.kind;
+    next.kind = checkKind(next.agent, next.kind);
     if (change.role !== undefined) next.role = change.role.trim();
-    if (change.model !== undefined) next.model = checkModel(change.model);
+    if (change.model !== undefined) next.model = checkModel(next.agent, change.model);
     if (change.effort !== undefined) next.effort = checkEffort(change.effort);
     if (change.mode !== undefined) next.mode = checkMode(change.mode);
     if (change.confined !== undefined) next.confined = change.confined;
@@ -724,9 +732,19 @@ function message(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-function checkModel(model: string): string {
+function checkModel(agent: Agent, model: string): string {
+  if (agent === 'codex') {
+    if (!/^[\w.:-]{1,64}$/.test(model)) throw new Error(`Not a model name: ${model}`);
+    return model;
+  }
   if (!MODELS.some((m) => m.id === model)) throw new Error(`Unknown model: ${model}`);
   return model;
+}
+
+/** A queen plans through beekeep's team tools, which only Claude bees have for now. */
+function checkKind(agent: Agent, kind: BeeRow['kind']): BeeRow['kind'] {
+  if (kind === 'queen' && agent !== 'claude') throw new Error('A queen runs on Claude Code for now; Codex bees can be workers.');
+  return kind;
 }
 
 function checkEffort(effort: string | null): string | null {

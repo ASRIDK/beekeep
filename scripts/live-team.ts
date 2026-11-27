@@ -11,7 +11,7 @@ import { Warden } from '../server/warden.ts';
 const dir = realpathSync(mkdtempSync(join(tmpdir(), 'hive-team-')));
 const ws = join(dir, 'ws');
 process.env.BEEKEEP_WORK = ws;
-const warden = new Warden(findClaude());
+const warden = new Warden();
 const ctx = assemble({
   file: join(dir, 'hive.db'),
   hiveCommand: '/bin/echo',

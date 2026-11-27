@@ -104,6 +104,9 @@ ALTER TABLE bees ADD COLUMN origin TEXT;
 ALTER TABLE bees ADD COLUMN branch TEXT;
 ALTER TABLE terms ADD COLUMN host TEXT;
 `,
+  `
+ALTER TABLE bees ADD COLUMN agent TEXT NOT NULL DEFAULT 'claude';
+`,
 ];
 
 type Row = Record<string, unknown>;
@@ -111,6 +114,7 @@ const json = (v: unknown) => JSON.parse(v as string);
 
 const toBee = (r: Row): BeeRow => ({
   id: r.id as string,
+  agent: ((r.agent as string | undefined) ?? 'claude') as BeeRow['agent'],
   spaceId: r.space_id as string,
   name: r.name as string,
   kind: r.kind as BeeRow['kind'],
@@ -340,18 +344,18 @@ export class Store {
 
   addBee(b: BeeRow): void {
     this.run(
-      `INSERT INTO bees (id, space_id, name, kind, role, model, effort, mode, workspace, session_id, mark, abilities,
-       grants, auto_plan, confined, origin, branch, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      b.id, b.spaceId, b.name, b.kind, b.role, b.model, b.effort, b.mode, b.workspace, b.sessionId, b.mark,
+      `INSERT INTO bees (id, agent, space_id, name, kind, role, model, effort, mode, workspace, session_id, mark, abilities,
+       grants, auto_plan, confined, origin, branch, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      b.id, b.agent, b.spaceId, b.name, b.kind, b.role, b.model, b.effort, b.mode, b.workspace, b.sessionId, b.mark,
       JSON.stringify(b.abilities), JSON.stringify(b.grants), b.autoPlan ? 1 : 0, b.confined ? 1 : 0, b.origin, b.branch, b.createdAt,
     );
   }
 
   saveBee(b: BeeRow): void {
     this.run(
-      `UPDATE bees SET space_id = ?, name = ?, kind = ?, role = ?, model = ?, effort = ?, mode = ?, workspace = ?,
+      `UPDATE bees SET agent = ?, space_id = ?, name = ?, kind = ?, role = ?, model = ?, effort = ?, mode = ?, workspace = ?,
        session_id = ?, abilities = ?, grants = ?, auto_plan = ?, confined = ?, origin = ?, branch = ? WHERE id = ?`,
-      b.spaceId, b.name, b.kind, b.role, b.model, b.effort, b.mode, b.workspace, b.sessionId,
+      b.agent, b.spaceId, b.name, b.kind, b.role, b.model, b.effort, b.mode, b.workspace, b.sessionId,
       JSON.stringify(b.abilities), JSON.stringify(b.grants), b.autoPlan ? 1 : 0, b.confined ? 1 : 0, b.origin, b.branch, b.id,
     );
   }

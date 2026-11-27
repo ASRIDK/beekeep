@@ -12,7 +12,7 @@ import type { Spaces } from './spaces.ts';
 import type { Store } from './store.ts';
 import type { Team } from './team.ts';
 import type { Terms } from './terms.ts';
-import { EFFORTS, MODELS, type Snapshot } from './types.ts';
+import { AGENTS, EFFORTS, MODELS, type Snapshot } from './types.ts';
 
 export interface Context {
   hive: Hive;
@@ -43,10 +43,11 @@ const size = { cols: z.number().int().min(2).max(500), rows: z.number().int().mi
 const names = z.array(z.string().max(100)).max(100);
 
 const beeFields = {
+  agent: z.enum(['claude', 'codex']),
   name: z.string().max(40),
   kind: z.enum(['worker', 'queen']),
   role: text,
-  model: id,
+  model: z.string().regex(/^[\w.:-]{1,64}$/),
   effort: z.string().nullable(),
   mode: z.enum(['look', 'work', 'full']),
   workspace: z.string().max(1000),
@@ -127,6 +128,7 @@ const ops: Record<string, Handler> = {
         workspace: defaultWorkspace(),
         home: homedir(),
         models: MODELS,
+        agents: AGENTS,
         efforts: EFFORTS,
         mcp: listMcp(),
         skills: listSkills(),

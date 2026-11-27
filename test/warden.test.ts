@@ -23,7 +23,7 @@ function server(): Promise<{ proc: ChildProcess; watched: number; unwatched: num
   const code = `
     const { Warden } = await import(${JSON.stringify(wardenUrl)});
     const { spawn } = await import('node:child_process');
-    const w = new Warden('/bin/sleep');
+    const w = new Warden();
     const quiet = { stdio: 'ignore', detached: true };
     const a = spawn('/bin/sleep', ['60'], quiet);
     const b = spawn('/bin/sleep', ['60'], quiet);

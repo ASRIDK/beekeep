@@ -12,6 +12,7 @@ export function BeeForm({ bee, onDone }: { bee?: BeeView; onDone: (made: BeeView
   const [name, setName] = useState(bee?.name ?? '');
   const [kind, setKind] = useState<BeeKind>(bee?.kind ?? 'worker');
   const [role, setRole] = useState(bee?.role ?? '');
+  const [agent, setAgent] = useState(bee?.agent ?? 'claude');
   const [model, setModel] = useState(bee?.model ?? 'haiku');
   const [effort, setEffort] = useState(bee?.effort ?? '');
   const [mode, setMode] = useState<BeeMode>(bee?.mode ?? 'look');
@@ -33,7 +34,7 @@ export function BeeForm({ bee, onDone }: { bee?: BeeView; onDone: (made: BeeView
 
   async function save(e: FormEvent) {
     e.preventDefault();
-    const fields = { name, kind, role, model, effort: effort || null, mode, workspace, spaceId, abilities: can, autoPlan, confined, ownCopy };
+    const fields = { agent, name, kind, role, model, effort: effort || null, mode, workspace, spaceId, abilities: can, autoPlan, confined, ownCopy };
     setSaving(true);
     setProblem(null);
     try {
@@ -85,11 +86,29 @@ export function BeeForm({ bee, onDone }: { bee?: BeeView; onDone: (made: BeeView
         Role (optional)
         <textarea rows={2} value={role} onChange={(e) => setRole(e.target.value)} placeholder="Find sources and check dates" />
       </label>
+      <label>
+        Agent
+        <select
+          value={agent}
+          onChange={(e) => {
+            const next = e.target.value as typeof agent;
+            setAgent(next);
+            setModel(next === 'codex' ? 'default' : 'haiku');
+            if (next === 'codex') setKind('worker');
+          }}
+        >
+          {defaults.agents.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.label}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="two">
         <label>
           Model
           <select value={model} onChange={(e) => setModel(e.target.value)}>
-            {defaults.models.map((m) => (
+            {(defaults.agents.find((a) => a.id === agent)?.models ?? defaults.models).map((m) => (
               <option key={m.id} value={m.id}>
                 {m.label}
               </option>

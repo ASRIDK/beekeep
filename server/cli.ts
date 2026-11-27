@@ -115,6 +115,7 @@ beekeep start | stop | status    run it without a window, stop it, or check on i
 beekeep link                     a one-time link for a browser of your choice
 beekeep logs                     the server log
 beekeep app                      build the Mac app into ~/Applications
+beekeep login codex              log in the Codex profile that Codex bees use
 
 beekeep bees                     list the bees
 beekeep order <bee> <text>       give an order (waits behind your own)
@@ -197,6 +198,18 @@ async function main([command, ...rest]: string[]): Promise<void> {
     }
     case 'logs':
       return console.log(existsSync(logFile) ? readFileSync(logFile, 'utf8').slice(-20_000) : 'No log yet.');
+    case 'login': {
+      // Codex bees have their own Codex profile; Codex itself does the login.
+      if (rest[0] !== 'codex') throw new Error('Usage: beekeep login codex');
+      const { findCodex } = await import('./claude.ts');
+      const { codexEnv, codexHome } = await import('./codex.ts');
+      const codex = findCodex();
+      if (!codex) throw new Error('Codex was not found. Install it first: npm install -g @openai/codex');
+      mkdirSync(codexHome(), { recursive: true, mode: 0o700 });
+      const done = spawnSync(codex, ['login', ...rest.slice(1)], { stdio: 'inherit', env: codexEnv() });
+      process.exitCode = done.status ?? 1;
+      return;
+    }
     case 'app': {
       const built = spawnSync('/bin/bash', [join(root, 'mac/build.sh'), appPath], { stdio: 'inherit' });
       process.exitCode = built.status ?? 1;

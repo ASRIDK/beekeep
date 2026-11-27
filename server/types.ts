@@ -31,8 +31,12 @@ export interface Grant {
   match?: string;
 }
 
+/** The coding agent a bee runs on. */
+export type Agent = 'claude' | 'codex';
+
 export interface BeeRow {
   id: string;
+  agent: Agent;
   spaceId: string;
   name: string;
   kind: BeeKind;
@@ -286,6 +290,7 @@ export interface Snapshot {
     workspace: string;
     home: string;
     models: { id: string; label: string }[];
+    agents: { id: Agent; label: string; models: { id: string; label: string }[] }[];
     efforts: string[];
     mcp: { name: string; type: string }[];
     skills: { name: string; about: string }[];
@@ -298,6 +303,12 @@ export const MODELS = [
   { id: 'haiku', label: 'Haiku 5.5 (light)' },
   { id: 'sonnet', label: 'Sonnet 5.5 (middle)' },
   { id: 'opus', label: 'Opus 5.5 (heavy)' },
+];
+
+/** The agents a bee can run on, and the models each offers. Codex may also take any model name it knows. */
+export const AGENTS: { id: Agent; label: string; models: { id: string; label: string }[] }[] = [
+  { id: 'claude', label: 'Claude Code', models: MODELS },
+  { id: 'codex', label: 'Codex', models: [{ id: 'default', label: 'Codex’s default model' }] },
 ];
 
 export const EFFORTS = ['low', 'medium', 'high', 'xhigh', 'max'];

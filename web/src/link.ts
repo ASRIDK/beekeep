@@ -38,7 +38,7 @@ let state: State = {
     blocked: null, paused: false, overrideUntil: null, checkedAt: null,
   },
   layouts: {},
-  defaults: { workspace: '', home: '', models: [], efforts: [], mcp: [], skills: [] },
+  defaults: { workspace: '', home: '', models: [], agents: [], efforts: [], mcp: [], skills: [] },
   events: {},
   older: {},
   typing: {},

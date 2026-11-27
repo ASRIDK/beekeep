@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 export class Warden {
   private child: ChildProcess;
 
-  constructor(command: string) {
-    this.child = spawn(process.execPath, [fileURLToPath(new URL(`./warden-process.${import.meta.url.endsWith('.ts') ? 'ts' : 'js'}`, import.meta.url)), command], {
+  constructor() {
+    this.child = spawn(process.execPath, [fileURLToPath(new URL(`./warden-process.${import.meta.url.endsWith('.ts') ? 'ts' : 'js'}`, import.meta.url))], {
       stdio: ['pipe', 'ignore', 'ignore'],
       detached: true,
     });

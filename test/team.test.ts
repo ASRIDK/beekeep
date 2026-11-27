@@ -578,7 +578,7 @@ describe('older data', () => {
     expect(s.events('q')[0]!.data.text).toBe('hi');
     expect(s.order(1)).toMatchObject({ text: 'go', taskId: null, planFirst: false });
     s.close();
-    const copy = new DatabaseSync(`${file}.before-v3`, { readOnly: true });
+    const copy = new DatabaseSync(`${file}.before-v4`, { readOnly: true });
     expect(copy.prepare('SELECT count(*) AS n FROM bees').get()).toMatchObject({ n: 2 });
     copy.close();
     const again = new Store(file);
