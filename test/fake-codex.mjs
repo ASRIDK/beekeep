@@ -23,6 +23,7 @@ let thread = null;
 let resumed = false;
 let turn = null;
 let interrupted = null;
+let stopEarly = false; // A stop can arrive before the scene has started.
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const item = (type, extra) => ({ type, id: `${type}-${next++}`, ...extra });
 const say = (text) => {
@@ -66,7 +67,8 @@ async function play(text) {
     const r = await ask('item/tool/requestUserInput', { threadId: thread, turnId: turn, itemId: 'q', questions: [] });
     say(r.error ? `refused: ${r.error.code}` : 'answered');
   } else if (text.includes('slow')) {
-    await new Promise((r) => (interrupted = r));
+    if (!stopEarly) await new Promise((r) => (interrupted = r));
+    stopEarly = false;
     return end('interrupted');
   } else if (text.includes('whoami')) {
     say(`thread: ${thread}, resumed: ${resumed}`);
@@ -112,7 +114,13 @@ createInterface({ input: process.stdin }).on('line', async (line) => {
     }
     case 'turn/interrupt':
       out({ id: m.id, result: {} });
-      return interrupted?.();
+      if (interrupted) {
+        const done = interrupted;
+        interrupted = null;
+        return done();
+      }
+      stopEarly = true;
+      return;
     default:
       return out({ id: m.id, error: { code: -32601, message: 'unknown' } });
   }
