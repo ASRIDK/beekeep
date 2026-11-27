@@ -270,6 +270,9 @@ async function main([command, ...rest]: string[]): Promise<void> {
       const { serve } = await import('./mcp.ts');
       return serve(api);
     }
+    case 'version':
+    case '--version':
+      return console.log(JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')).version);
     case 'help':
     case '--help':
       return console.log(HELP);

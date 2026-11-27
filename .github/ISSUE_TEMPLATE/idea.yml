@@ -1,0 +1,23 @@
+name: An idea
+description: Something beekeep could do, or do better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: why
+    attributes:
+      label: What you are trying to do
+      description: The situation and what gets in the way. This matters more than the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: What you would like
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to build it?
+      options:
+        - Yes, with some pointers
+        - Maybe
+        - No, just suggesting

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and ideas to talk through
+    url: https://github.com/ASRIDK/beekeep/discussions
+    about: Not sure it is a bug, or want to discuss before building? Start a discussion.
+  - name: Security problem
+    url: https://github.com/ASRIDK/beekeep/security/advisories/new
+    about: Please report security problems privately.

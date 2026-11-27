@@ -1,0 +1,25 @@
+name: Support another agent
+description: Run bees on another coding agent (Gemini CLI, OpenCode, Aider, ...)
+labels: [agent, enhancement]
+body:
+  - type: input
+    id: agent
+    attributes:
+      label: Which agent
+      placeholder: Gemini CLI
+    validations:
+      required: true
+  - type: textarea
+    id: interface
+    attributes:
+      label: How a program can drive it
+      description: Does it have a server mode, a JSON event stream, an SDK? Can it pause and ask before a command? Links to its docs help a lot.
+  - type: dropdown
+    id: help
+    attributes:
+      label: Would you like to build it?
+      description: CONTRIBUTING.md has a step-by-step guide to adding an agent.
+      options:
+        - Yes
+        - Maybe
+        - No, just suggesting

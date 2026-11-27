@@ -1,0 +1,30 @@
+name: Something does not work
+description: A bug, a crash, or something that behaves differently than the README says
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it again
+      placeholder: |
+        1. Run beekeep
+        2. Give Worker 1 the order ...
+        3. ...
+  - type: input
+    id: version
+    attributes:
+      label: Versions
+      description: Output of `beekeep --version` if you have it, your OS, `node -v`, and `claude --version` or `codex --version`.
+  - type: textarea
+    id: log
+    attributes:
+      label: Server log
+      description: The end of `beekeep logs`, if it shows an error. Remove anything private first.
+      render: text

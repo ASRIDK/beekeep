@@ -1,8 +1,8 @@
 # beekeep
 
-[![CI](https://github.com/ASRIDK/beekeep/actions/workflows/ci.yml/badge.svg)](https://github.com/ASRIDK/beekeep/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/ASRIDK/beekeep/actions/workflows/ci.yml/badge.svg)](https://github.com/ASRIDK/beekeep/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Lead a team of Claude Code agents from your terminal. A queen plans, workers do the work, you watch every step live, and everything that needs your yes waits in one place.
+Lead a team of Claude Code and Codex agents from your terminal. A queen plans, workers do the work, you watch every step live, and everything that needs your yes waits in one place.
 
 ![A real beekeep session: a starter hive, the queen's plan approved with one key, two workers writing side by side, and a web request answered from the same screen](docs/demo.svg)
 
@@ -18,11 +18,12 @@ beekeep puts them on one screen:
 - **One place for yes and no.** A bee that wants to run a command, open a web page or touch a file outside its folder waits in a single list. Answer with `y`, `n`, or `a` for "always" where that is safe.
 - **A queen who plans.** Give the queen a goal. She splits it into tasks for the workers, with their order and the files each one owns, and nothing starts until you press `y`. She checks the results and reports back.
 - **Light bees.** A bee gets only the tools you give it. A read-only bee starts with a few thousand tokens of context, not everything your Claude Code setup loads.
-- **Your login, never touched.** beekeep runs the Claude Code you already installed and logged into. It never sees, stores or asks for credentials.
+- **Claude Code and Codex, side by side.** Each bee runs on the agent you pick. Both go through the same approvals, the same history and the same plans.
+- **Your login, never touched.** beekeep runs the Claude Code or Codex you already installed and logged into. It never sees, stores or asks for credentials.
 
 ## Install
 
-You need [Claude Code](https://code.claude.com/docs/en/overview), installed and logged in (run `claude` once), and Node 22 or newer.
+You need Node 22 or newer and at least one agent: [Claude Code](https://code.claude.com/docs/en/overview), installed and logged in (run `claude` once), or [Codex](https://github.com/openai/codex) (then run `beekeep login codex` once, see below).
 
 ```sh
 npm install -g beekeep
@@ -51,7 +52,7 @@ Run `beekeep`. The first time, press Enter for a starter hive: a queen on Sonnet
 | `y` `n` `a` | answer what a bee asks: yes, no, always |
 | `Tab` | next question, when several bees ask |
 | `p` | see the queen's plan: `y` start it, `u` start it and let its bees edit files, `n` refuse |
-| `+` | add a bee: name, job (worker or queen), model, what it may do, shell or not |
+| `+` | add a bee: name, agent (Claude Code or Codex), job, model, what it may do, shell or not |
 | `s` / `x` | stop the chosen bee / stop every bee |
 | `w` | open the full window in your browser |
 | `q` | leave the screen. Bees keep working; `beekeep stop` ends them |
@@ -73,11 +74,26 @@ beekeep mcp                        # an MCP server, so another Claude Code sessi
 
 The command line and MCP can give orders and read everything, but they can never approve a request, change a bee, or start a plan. Only you can, from the screen or the window.
 
-## Your Claude login and usage
+## Agents
 
-beekeep starts bees through Anthropic's [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview), which runs your installed `claude`. Each bee uses whatever Claude Code is logged into, and its usage counts against your own account. On Claude subscription plans, Agent SDK usage draws from its own monthly credit; see Anthropic's documentation for the current rules.
+| | Claude Code | Codex |
+| --- | --- | --- |
+| Workers | yes | yes |
+| Queen (plans for the others) | yes | not yet |
+| Commands | each one asks you (shell is off by default) | every command except ones Codex knows are safe and read-only asks you |
+| Files outside the bee's folder | ask you | ask you, with the change shown |
+| Websites | ask per site; "always" remembered | ask per command or site |
+| Setup | runs your Claude Code with its login | runs your Codex in a profile of its own: `beekeep login codex` once |
 
-- beekeep never handles a login. Anthropic does not allow apps to offer Claude.ai login or to share one person's plan with others ([legal and compliance](https://code.claude.com/docs/en/legal-and-compliance)). Use beekeep with your own login, for yourself.
+Codex bees get their own Codex profile (in `~/.beekeep/codex`), so your personal Codex rules ("always allow curl"), hooks, plugins and memories never reach them. Codex keeps its login there itself.
+
+**More agents.** Gemini CLI, OpenCode, Aider and others can be added the same way; [CONTRIBUTING.md](CONTRIBUTING.md) explains how, step by step, and [open issues](https://github.com/ASRIDK/beekeep/labels/agent) track the ones people asked for.
+
+## Your login and usage
+
+beekeep starts Claude bees through Anthropic's [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview), which runs your installed `claude`, and Codex bees through `codex app-server`, which runs your installed `codex`. Each bee uses that agent's own login, and its usage counts against your own account. On Claude subscription plans, Agent SDK usage draws from its own monthly credit; see Anthropic's documentation for the current rules.
+
+- beekeep never handles a login: the agents' own programs do. Anthropic does not allow apps to offer Claude.ai login or to share one person's plan with others ([legal and compliance](https://code.claude.com/docs/en/legal-and-compliance)). Use beekeep with your own login, for yourself.
 - API keys and cloud providers (`ANTHROPIC_API_KEY`, Bedrock, Vertex) are ignored unless you start beekeep with `BEEKEEP_API_KEY=1`, so a key that happens to be set never bills you by surprise.
 - With [quota-axi](https://github.com/kunchenguid/quota-axi) installed, beekeep shows how much of your plan's limits is left and holds new work back below limits you choose.
 
@@ -99,7 +115,8 @@ Bees read web pages and files that may try to steer them. beekeep assumes that, 
 | `BEEKEEP_WORK` | `~/beekeep-work` | where new bees work |
 | `BEEKEEP_HOME` | `~/.beekeep` | beekeep's own data |
 | `BEEKEEP_PORT` | `3150` | the local server's port |
-| `BEEKEEP_API_KEY` | off | `1` lets bees use an API key or cloud provider |
+| `BEEKEEP_API_KEY` | off | `1` lets Claude bees use an API key or cloud provider |
+| `BEEKEEP_CODEX_HOME` | `~/.beekeep/codex` | the Codex profile Codex bees use |
 
 ## Develop
 
@@ -107,9 +124,16 @@ Bees read web pages and files that may try to steer them. beekeep assumes that, 
 npm test                               # unit and integration tests, no Claude needed
 node scripts/screen-check.ts           # drives the terminal screen in a hidden terminal
 LIVE=1 node scripts/screen-check.ts    # the same with real Claude (uses a little of your usage)
+node scripts/live-codex.ts             # a real Codex bee through its approvals (uses a little Codex usage)
 ```
 
 The server is in `server/`, the terminal screen in `tui/`, the browser window in `web/`.
+
+## Contributing
+
+beekeep is young and contributions are very welcome: a fix, a test, a new agent, or a better sentence in this README. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the [good first issues](https://github.com/ASRIDK/beekeep/labels/good%20first%20issue). Questions and ideas go to [Discussions](https://github.com/ASRIDK/beekeep/discussions).
+
+If beekeep is useful to you, a star helps other people find it.
 
 ## License
 

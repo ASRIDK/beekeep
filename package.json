@@ -43,7 +43,7 @@
     "vite": "^8.3.8",
     "vitest": "^5.1.1"
   },
-  "description": "Lead a team of Claude Code agents from your terminal: a queen that plans, workers you can watch live, and one place for every approval.",
+  "description": "Lead a team of Claude Code and Codex agents from your terminal: a queen that plans, workers you watch live, one place for every approval.",
   "bin": {
     "beekeep": "bin/beekeep"
   },
@@ -60,11 +60,21 @@
   "keywords": [
     "claude",
     "claude-code",
+    "codex",
+    "openai-codex",
     "agents",
     "multi-agent",
     "tui",
     "terminal",
     "orchestration",
     "ai"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ASRIDK/beekeep.git"
+  },
+  "homepage": "https://github.com/ASRIDK/beekeep#readme",
+  "bugs": {
+    "url": "https://github.com/ASRIDK/beekeep/issues"
+  }
 }
