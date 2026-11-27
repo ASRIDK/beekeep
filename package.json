@@ -44,6 +44,7 @@
     "vitest": "^5.1.1"
   },
   "description": "Lead a team of Claude Code and Codex agents from your terminal: a queen that plans, workers you watch live, one place for every approval.",
+  "author": "ASRIDK (https://github.com/ASRIDK)",
   "bin": {
     "beekeep": "bin/beekeep"
   },
