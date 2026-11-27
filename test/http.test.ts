@@ -181,7 +181,14 @@ describe('requests', () => {
     expect((await call('snapshot')).ok).toBe(true);
   });
 
-  it('gives a bee its own git copy, and takes it back', async () => {
+  it.runIf(process.platform !== 'darwin')('says plainly that own git copies need macOS', async () => {
+    const a = await connect();
+    const made = await a.call('bee.create', { name: 'Anna', mode: 'work', workspace: dir, ownCopy: true });
+    expect(made).toMatchObject({ ok: false, error: expect.stringMatching(/macOS/) });
+    expect((await a.call('snapshot')).data.bees).toEqual([]);
+  });
+
+  it.runIf(process.platform === 'darwin')('gives a bee its own git copy, and takes it back', async () => {
     const git = (...args: string[]) => execFileSync('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args]);
     process.env.BEEKEEP_COPIES = join(dir, 'copies');
     const project = join(dir, 'project');
